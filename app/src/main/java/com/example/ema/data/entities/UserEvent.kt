@@ -1,10 +1,10 @@
-package com.example.ema.entity
+package com.example.ema.data.entities
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "registrations")
-data class Registration(
+@Entity(tableName = "user_events")
+data class UserEvent(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val userId: Int,
     val eventId: Int

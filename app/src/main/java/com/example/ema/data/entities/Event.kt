@@ -1,4 +1,4 @@
-package com.example.ema.entity
+package com.example.ema.data.entities
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -6,7 +6,10 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "events")
 data class Event(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val title: String,
+    val name: String,
     val description: String,
-    val date: Long
+    val date: String,
+    val location: String,
+    val totalSeats: Int,
+    val availableSeats: Int
 )
