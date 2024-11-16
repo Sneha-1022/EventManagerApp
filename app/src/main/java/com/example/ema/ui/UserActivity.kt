@@ -1,7 +1,10 @@
 package com.example.ema.ui
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
@@ -14,6 +17,7 @@ import com.example.ema.data.dao.EventDao
 import com.example.ema.data.dao.RegistrationDao
 import com.example.ema.data.entities.Event
 import com.example.ema.data.entities.Registration
+import com.example.ema.utils.SessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -27,12 +31,18 @@ class UserActivity : AppCompatActivity() {
     private lateinit var eventAdapter: UserEventAdapter
     private val events = mutableListOf<Event>()
     private var currentUserId: Int = 0
+    private lateinit var logout: Button
+    private lateinit var sessionManager: SessionManager
 
+
+    @SuppressLint("MissingInflatedId", "SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_user)
 
         currentUserId = intent.getIntExtra("USER_ID", 0)
+
+        findViewById<TextView>(R.id.usernameDisplay).text = "Hello, ${SessionManager(this).getUsername()}"
 
         val db = AppDatabase.getDatabase(this)
         eventDao = db.eventDao()
@@ -56,6 +66,20 @@ class UserActivity : AppCompatActivity() {
 
         recyclerView.adapter = eventAdapter
         fetchEvents()
+
+
+        sessionManager = SessionManager(this)
+        logout = findViewById(R.id.logoutButton)
+        logout.setOnClickListener {
+            sessionManager.logout()
+            val intent = Intent(this, LoginActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            Toast.makeText(this, "Logged out", Toast.LENGTH_SHORT).show()
+
+            finish()
+        }
+
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -65,6 +89,15 @@ class UserActivity : AppCompatActivity() {
                 events.clear()
                 events.addAll(fetchedEvents)
                 eventAdapter.notifyDataSetChanged()
+
+                if (events.isEmpty()) {
+                    findViewById<TextView>(R.id.noEvents).visibility = android.view.View.VISIBLE
+                    recyclerView.visibility = android.view.View.GONE
+                } else {
+                    findViewById<TextView>(R.id.noEvents).visibility = android.view.View.GONE
+                    recyclerView.visibility = android.view.View.VISIBLE
+                }
+
             })
         }
     }

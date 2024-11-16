@@ -1,13 +1,12 @@
 package com.example.ema.ui
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.example.ema.R
 import com.example.ema.data.AppDatabase
 import com.example.ema.data.dao.UserDao
@@ -19,6 +18,7 @@ import kotlinx.coroutines.withContext
 
 class RegisterActivity : AppCompatActivity() {
     private lateinit var userDao: UserDao
+    private lateinit var loginLink: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,6 +38,14 @@ class RegisterActivity : AppCompatActivity() {
 
             registerUser(username, password)
         }
+
+        loginLink = findViewById(R.id.loginLink)
+        loginLink.setOnClickListener {
+            val intent = Intent(this, LoginActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            finish()
+        }
     }
 
     private fun registerUser(username: String, password: String) {
@@ -48,7 +56,7 @@ class RegisterActivity : AppCompatActivity() {
                 userDao.insertUser(newUser)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@RegisterActivity, "com.example.ema.data.entities.Registration Successful", Toast.LENGTH_SHORT).show()
-                    finish() // Redirect to LoginActivity
+                    finish()
                 }
             } else {
                 withContext(Dispatchers.Main) {

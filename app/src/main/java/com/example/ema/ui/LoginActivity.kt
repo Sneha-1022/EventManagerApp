@@ -1,33 +1,35 @@
 package com.example.ema.ui
 
-import android.content.ContentValues.TAG
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.example.ema.R
 import com.example.ema.data.AppDatabase
 import com.example.ema.data.dao.UserDao
+import com.example.ema.utils.SessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.math.log
 
 class LoginActivity : AppCompatActivity() {
     private lateinit var userDao: UserDao
-    lateinit var register : TextView
+    private lateinit var register: TextView
+    private lateinit var sessionManager: SessionManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
+
+        sessionManager = SessionManager(this)
+
+        if (sessionManager.isLoggedIn()) {
+            navigateToNextScreen(sessionManager.getUserId())
+        }
 
         val db = AppDatabase.getDatabase(this)
         userDao = db.userDao()
@@ -39,18 +41,20 @@ class LoginActivity : AppCompatActivity() {
             CoroutineScope(Dispatchers.IO).launch {
                 val user = userDao.authenticate(username, password)
                 withContext(Dispatchers.Main) {
-                    Log.d(TAG, "onCreate: $username $password")
                     if (username == "admin" || user != null) {
-                        Log.d(TAG, "onCreate: $username $password")
+
 
                         if (username == "admin" && password == "admin") {
+                            sessionManager.createLoginSession("admin")
                             startActivity(Intent(this@LoginActivity, AdminActivity::class.java))
                         } else {
-                            val intent = Intent(this@LoginActivity, UserActivity::class.java)
-                            if (user != null) {
-                                intent.putExtra("USER_ID", user.id)
+                            user?.let {
+                                sessionManager.createLoginSession(it.id.toString())
+                                sessionManager.saveUsername(username.toString())
+                                val intent = Intent(this@LoginActivity, UserActivity::class.java)
+                                intent.putExtra("USER_ID", it.id)
+                                startActivity(intent)
                             }
-                            startActivity(intent)
                         }
                         finish()
                     } else {
@@ -64,5 +68,16 @@ class LoginActivity : AppCompatActivity() {
         register.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
+    }
+
+    private fun navigateToNextScreen(userId: String?) {
+        if (userId == "admin") {
+            startActivity(Intent(this, AdminActivity::class.java))
+        } else {
+            val intent = Intent(this, UserActivity::class.java)
+            userId?.let { intent.putExtra("USER_ID", it) }
+            startActivity(intent)
+        }
+        finish()
     }
 }

@@ -19,7 +19,7 @@ class UserEventAdapter(
     private val events: List<Event>,
     private val currentUserId: Int,
     private val registrationDao: RegistrationDao,
-    private val onToggleRegistration: (Event, Boolean) -> Unit // Handle registration toggle
+    private val onToggleRegistration: (Event, Boolean) -> Unit
 ) : RecyclerView.Adapter<UserEventAdapter.UserEventViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): UserEventViewHolder {
@@ -31,7 +31,6 @@ class UserEventAdapter(
         val event = events[position]
         holder.bind(event)
         holder.registerButton.setOnClickListener {
-            // Toggle registration based on current status
             CoroutineScope(Dispatchers.IO).launch {
                 val isRegistered = registrationDao.isUserRegisteredForEvent(currentUserId, event.id)
                 withContext(Dispatchers.Main) {
@@ -52,10 +51,9 @@ class UserEventAdapter(
         @SuppressLint("SetTextI18n")
         fun bind(event: Event) {
             eventName.text = event.name
-            eventDate.text = event.date
+            eventDate.text = "Event Date: ${event.date }"
             eventSeats.text = "Seats Available: ${event.availableSeats}"
 
-            // Check registration status and set button text
             CoroutineScope(Dispatchers.IO).launch {
                 val isRegistered = registrationDao.isUserRegisteredForEvent(currentUserId, event.id)
                 withContext(Dispatchers.Main) {

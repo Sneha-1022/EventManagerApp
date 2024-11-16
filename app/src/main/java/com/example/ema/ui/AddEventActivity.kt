@@ -1,6 +1,7 @@
 package com.example.ema.ui
 
 import android.annotation.SuppressLint
+import android.app.DatePickerDialog
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
@@ -14,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Calendar
 
 class AddEventActivity : AppCompatActivity() {
 
@@ -30,11 +32,9 @@ class AddEventActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_event)
 
-        // Get database reference
         val db = AppDatabase.getDatabase(this)
         eventDao = db.eventDao()
 
-        // Initialize views
         eventNameEditText = findViewById(R.id.eventNameEditText)
         eventDescriptionEditText = findViewById(R.id.eventDescriptionEditText)
         eventDateEditText = findViewById(R.id.eventDateEditText)
@@ -42,9 +42,12 @@ class AddEventActivity : AppCompatActivity() {
         eventSeatsEditText = findViewById(R.id.eventSeatsEditText)
         addEventButton = findViewById(R.id.addEventButton)
 
-        // Set click listener for adding the event
         addEventButton.setOnClickListener {
             addEvent()
+        }
+
+        eventDateEditText.setOnClickListener {
+            showDatePickerDialog()
         }
     }
 
@@ -55,20 +58,17 @@ class AddEventActivity : AppCompatActivity() {
         val eventLocation = eventLocationEditText.text.toString().trim()
         val eventSeats = eventSeatsEditText.text.toString().trim()
 
-        // Check if all fields are filled
         if (eventName.isEmpty() || eventDescription.isEmpty() || eventDate.isEmpty() || eventLocation.isEmpty() || eventSeats.isEmpty()) {
             Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // Convert seats to integer
         val totalSeats = eventSeats.toIntOrNull()
         if (totalSeats == null || totalSeats <= 0) {
             Toast.makeText(this, "Please enter a valid number for seats", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // Create new event object
         val newEvent = Event(
             id = 0,
             name = eventName,
@@ -79,15 +79,29 @@ class AddEventActivity : AppCompatActivity() {
             availableSeats = totalSeats
         )
 
-        // Insert event into database
+
         CoroutineScope(Dispatchers.IO).launch {
             eventDao.insertEvent(newEvent)
             withContext(Dispatchers.Main) {
-                // Show success message and return to AdminActivity
                 Toast.makeText(this@AddEventActivity, "Event added successfully", Toast.LENGTH_SHORT).show()
                 setResult(RESULT_OK)
                 finish()
             }
         }
+    }
+
+    private fun showDatePickerDialog() {
+
+        val calendar = Calendar.getInstance()
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH)
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+        val datePickerDialog = DatePickerDialog(this, { _, selectedYear, selectedMonth, selectedDay ->
+            val selectedDate = "$selectedYear-${selectedMonth + 1}-$selectedDay"
+            eventDateEditText.setText(selectedDate)
+        }, year, month, day)
+
+        datePickerDialog.show()
     }
 }

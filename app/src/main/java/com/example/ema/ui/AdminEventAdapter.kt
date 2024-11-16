@@ -12,7 +12,7 @@ import com.example.ema.data.entities.Event
 
 class AdminEventAdapter(
     private val events: List<Event>,
-    private val onDeleteEvent: (Event) -> Unit  // Action to delete an event
+    private val onDeleteEvent: (Event) -> Unit
 ) : RecyclerView.Adapter<AdminEventAdapter.AdminEventViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AdminEventViewHolder {
@@ -24,7 +24,7 @@ class AdminEventAdapter(
         val event = events[position]
         holder.bind(event)
         holder.deleteButton.setOnClickListener {
-            onDeleteEvent(event)  // Trigger delete action
+            onDeleteEvent(event)
         }
     }
 
@@ -34,12 +34,12 @@ class AdminEventAdapter(
         private val eventName: TextView = view.findViewById(R.id.eventName)
         private val eventDate: TextView = view.findViewById(R.id.eventDate)
         private val eventSeats: TextView = view.findViewById(R.id.eventSeats)
-        val deleteButton: Button = view.findViewById(R.id.registerButton)  // Repurposed for delete
+        val deleteButton: Button = view.findViewById(R.id.registerButton)
 
         @SuppressLint("SetTextI18n")
         fun bind(event: Event) {
             eventName.text = event.name
-            eventDate.text = event.date
+            eventDate.text = "Event Date: ${event.date }"
             eventSeats.text = "Seats Available: ${event.availableSeats}"
             deleteButton.text = "Delete"
         }
