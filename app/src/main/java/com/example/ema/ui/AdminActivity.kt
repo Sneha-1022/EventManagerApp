@@ -12,7 +12,6 @@ import com.example.ema.R
 import com.example.ema.data.AppDatabase
 import com.example.ema.data.dao.EventDao
 import com.example.ema.data.entities.Event
-import com.example.ema.ui.adapter.EventAdapter
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,7 +22,7 @@ class AdminActivity : AppCompatActivity() {
 
     private lateinit var eventDao: EventDao
     private lateinit var recyclerView: RecyclerView
-    private lateinit var eventAdapter: EventAdapter
+    private lateinit var eventAdapter: AdminEventAdapter
     private val events = mutableListOf<Event>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,31 +35,23 @@ class AdminActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Initialize EventAdapter for Admin with delete action
-        eventAdapter = EventAdapter(
-            events,
-            isAdmin = true,  // Set isAdmin to true for AdminActivity
-            onEventAction = { event ->
-                deleteEvent(event)  // Admin action (delete event)
-            },
-            onRegisterAction = {
-                // No action needed for register/unregister in AdminActivity
-            }
+        // Initialize AdminEventAdapter
+        eventAdapter = AdminEventAdapter(
+            events = events,
+            onDeleteEvent = { event -> deleteEvent(event) }
         )
 
         recyclerView.adapter = eventAdapter
 
-        // Fetch events from the database
         fetchEvents()
 
-        // Set up FloatingActionButton to navigate to AddEventActivity
+        // Set up FloatingActionButton to add new events
         findViewById<FloatingActionButton>(R.id.fab).setOnClickListener {
             val intent = Intent(this, AddEventActivity::class.java)
             startActivityForResult(intent, REQUEST_ADD_EVENT)
         }
     }
 
-    // Fetch events from the database
     @SuppressLint("NotifyDataSetChanged")
     private fun fetchEvents() {
         eventDao.getAllEvents().observe(this, Observer { fetchedEvents ->
@@ -72,20 +63,18 @@ class AdminActivity : AppCompatActivity() {
 
     private fun deleteEvent(event: Event) {
         CoroutineScope(Dispatchers.IO).launch {
-            // Delete the event by passing its ID
             eventDao.deleteEvent(event.id)
             withContext(Dispatchers.Main) {
-                fetchEvents()  // Refresh event list after deletion
+                fetchEvents()
                 Toast.makeText(this@AdminActivity, "Event deleted", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    // Handle result from AddEventActivity (on event addition)
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_ADD_EVENT && resultCode == RESULT_OK) {
-            fetchEvents() // Refresh event list after adding a new event
+            fetchEvents()
         }
     }
 

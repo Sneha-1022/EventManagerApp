@@ -14,17 +14,17 @@ import com.example.ema.data.dao.EventDao
 import com.example.ema.data.dao.RegistrationDao
 import com.example.ema.data.entities.Event
 import com.example.ema.data.entities.Registration
-import com.example.ema.ui.adapter.EventAdapter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class UserActivity : AppCompatActivity() {
+
     private lateinit var eventDao: EventDao
     private lateinit var registrationDao: RegistrationDao
     private lateinit var recyclerView: RecyclerView
-    private lateinit var eventAdapter: EventAdapter
+    private lateinit var eventAdapter: UserEventAdapter
     private val events = mutableListOf<Event>()
     private var currentUserId: Int = 0
 
@@ -32,56 +32,46 @@ class UserActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_user)
 
-        // Get the user ID from the intent
         currentUserId = intent.getIntExtra("USER_ID", 0)
 
-        // Initialize the database DAO
         val db = AppDatabase.getDatabase(this)
         eventDao = db.eventDao()
         registrationDao = db.registrationDao()
 
-        // Set up the RecyclerView
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Initialize EventAdapter with required callbacks
-        eventAdapter = EventAdapter(
-            events,
-            isAdmin = false,  // Set isAdmin to false for UserActivity
-            onEventAction = { event -> showEventDetails(event) },
-            onRegisterAction = { event -> toggleRegistration(event) }
+        eventAdapter = UserEventAdapter(
+            events = events,
+            currentUserId = currentUserId,
+            registrationDao = registrationDao,
+            onToggleRegistration = { event, isRegistered ->
+                if (isRegistered) {
+                    deregisterUser(event)
+                } else {
+                    registerUser(event)
+                }
+            }
         )
 
         recyclerView.adapter = eventAdapter
-
-        // Fetch events from the database
         fetchEvents()
     }
 
     @SuppressLint("NotifyDataSetChanged")
     private fun fetchEvents() {
         lifecycleScope.launch {
-            // Observe the events LiveData on the main thread
             eventDao.getAllEvents().observe(this@UserActivity, Observer { fetchedEvents ->
                 events.clear()
                 events.addAll(fetchedEvents)
-                eventAdapter.notifyDataSetChanged()  // Notify the adapter about data change
+                eventAdapter.notifyDataSetChanged()
             })
         }
     }
 
-    private fun toggleRegistration(event: Event) {
+    private fun registerUser(event: Event) {
         CoroutineScope(Dispatchers.IO).launch {
-            val isRegistered = registrationDao.isUserRegisteredForEvent(currentUserId, event.id)
-            if (isRegistered) {
-                // Deregister the user if already registered
-                registrationDao.unregisterFromEvent(currentUserId, event.id)
-                eventDao.deregisterFromEvent(event.id)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@UserActivity, "Unregistered from ${event.name}", Toast.LENGTH_SHORT).show()
-                }
-            } else if (event.availableSeats > 0) {
-                // Register the user if seats are available
+            if (event.availableSeats > 0) {
                 registrationDao.registerForEvent(Registration(userId = currentUserId, eventId = event.id))
                 eventDao.registerForEvent(event.id)
                 withContext(Dispatchers.Main) {
@@ -92,12 +82,18 @@ class UserActivity : AppCompatActivity() {
                     Toast.makeText(this@UserActivity, "No seats available for ${event.name}", Toast.LENGTH_SHORT).show()
                 }
             }
-            fetchEvents()  // Refresh events list after registration/unregistration
+            fetchEvents()
         }
     }
 
-    private fun showEventDetails(event: Event) {
-        // Handle event click to show event details if needed
-        // You can open a new activity or show a dialog here with event details
+    private fun deregisterUser(event: Event) {
+        CoroutineScope(Dispatchers.IO).launch {
+            registrationDao.unregisterFromEvent(currentUserId, event.id)
+            eventDao.deregisterFromEvent(event.id)
+            withContext(Dispatchers.Main) {
+                Toast.makeText(this@UserActivity, "Unregistered from ${event.name}", Toast.LENGTH_SHORT).show()
+            }
+            fetchEvents()
+        }
     }
 }
